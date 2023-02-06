@@ -6,83 +6,167 @@ var summary = BenchmarkRunner.Run<TestInheritance>();
 public class Base
 {
     public readonly int value = 10;
+    public readonly int secondValue = 1000;
 
-    public virtual int GetValue()
+    // Choice is to avoid inlining. For the test to be interesting we need
+    // to do the call.
+    public virtual int GetValue(int choice)
     {
-        return value;
+        if (choice % 2 == 0)
+        {
+            return value;
+        }
+        else
+        {
+            return secondValue;
+        }
     }
 }
 
 public class First : Base
 {
     public readonly int firstValue = 11;
+    public readonly int notBaseSecondValue = -11;
 
-    public override int GetValue()
+    // Choice is to avoid inlining. For the test to be interesting we need
+    // to do the call.
+    public override int GetValue(int choice)
     {
-        return value + base.GetValue();
+        if (choice % 2 == 0)
+        {
+            return value + base.GetValue(choice + 1);;
+        }
+        else
+        {
+            return notBaseSecondValue + base.GetValue(choice);
+        }
     }
 }
 
 public class Second : Base
 {
-    public readonly int secondValue = 12;
+    public readonly int notBaseValue = 12;
+    public readonly int notBaseSecondValue = -12;
 
-    public override int GetValue()
+    // Choice is to avoid inlining. For the test to be interesting we need
+    // to do the call.
+    public override int GetValue(int choice)
     {
-        return value + base.GetValue();
+        if (choice % 2 == 0)
+        {
+            return notBaseValue + base.GetValue(choice + 1);;
+        }
+        else
+        {
+            return notBaseSecondValue + base.GetValue(choice);
+        }
     }
 }
 
 public interface IBase
 {
-    public abstract int DoSomething();
+    public abstract int DoSomething(int choice);
 }
 
 public class Doer : IBase
 {
-    public int DoSomething()
+    int value = 15;
+    int secondValue = -15;
+
+    public int DoSomething(int choice)
     {
-        return 15;
+        if (choice % 2 == 0)
+        {
+            return value;
+        }
+        else
+        {
+            return secondValue;
+        }
     }
 }
 
 public class DoerNoOverhead
 {
-    public int DoSomething()
+    int value = 16;
+    int secondValue = -16;
+
+    public int DoSomething(int choice)
     {
-        return 16;
+        if (choice % 2 == 0)
+        {
+            return value;
+        }
+        else
+        {
+            return secondValue;
+        }
     }
 }
 
 public class BaseDirect
 {
-    public readonly int value = 100;
+    int value = 100;
+    int secondValue = -100;
 
-    public int GetValue()
+    public int GetValue(int choice)
     {
-        return value;
+        if (choice % 2 == 0)
+        {
+            return value;
+        }
+        else
+        {
+            return secondValue;
+        }
     }
 }
 
 public class FirstDirect
 {
-    public readonly int value = 101;
-    public BaseDirect encapsulatedValue = new();
+    int value = 101;
+    int secondValue = -101;
+    public BaseDirect encapsulatedValue;
 
-    public int GetValue()
+    public FirstDirect()
     {
-        return value + encapsulatedValue.GetValue();
+        encapsulatedValue = new();
+    }
+
+    public int GetValue(int choice)
+    {
+        if (choice % 2 == 0)
+        {
+            return value + encapsulatedValue.GetValue(choice + 1);;
+        }
+        else
+        {
+            return secondValue + encapsulatedValue.GetValue(choice);
+        }
     }
 }
 
 public class SecondDirect
 {
     public readonly int value = 102;
-    public BaseDirect encapsulatedValue = new();
+    public readonly int secondValue = -102;
+    public BaseDirect encapsulatedValue;
 
-    public int GetValue()
+    public SecondDirect()
     {
-        return value + encapsulatedValue.GetValue();
+        encapsulatedValue = new();
+    }
+
+    public int GetValue(int choice)
+    {
+        if (choice % 2 == 0)
+        {
+            return value + encapsulatedValue.GetValue(choice + 1);;
+        }
+        else
+        {
+            return secondValue + encapsulatedValue.GetValue(choice);
+        }
     }
 }
 
@@ -98,8 +182,8 @@ public class TestInheritance
         
         for (int index = 0; index < reps; ++index)
         {
-            int value = encapsulatedObject.GetValue();
-            value = secondObj.GetValue();
+            int value = encapsulatedObject.GetValue(1);
+            value = secondObj.GetValue(1);
         }
     }
 
@@ -111,15 +195,15 @@ public class TestInheritance
 
         for (int index = 0; index < reps; ++index)
         {
-            int value = firstDerivedObj.GetValue();
-            value = secondDerivedObj.GetValue();
+            int value = firstDerivedObj.GetValue(1);
+            value = secondDerivedObj.GetValue(1);
         }
     }
 
     public void HelperMethod(Base first, Base second)
     {
-        int value = first.GetValue();
-        value = second.GetValue();
+        int value = first.GetValue(1);
+        value = second.GetValue(0);
     }
 
     [Benchmark]
@@ -136,12 +220,12 @@ public class TestInheritance
 
     public void DoerHelperMethod(IBase doer)
     {
-        doer.DoSomething();
+        doer.DoSomething(1);
     }
 
     public void DoerNoOverheadHelperMethod(DoerNoOverhead doer)
     {
-        doer.DoSomething();
+        doer.DoSomething(1);
     }
 
     [Benchmark]
