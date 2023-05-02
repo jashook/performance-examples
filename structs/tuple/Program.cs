@@ -35,4 +35,22 @@ public class ValueTupleBenchmark
             ValueTuple<int, int> tup = (3, 4);
         }
     }
+
+    [Benchmark]
+    public void LargeTupleCreatedInLoop()
+    {
+        for (int index = 0; index < 1000000; ++index)
+        {
+            Tuple<long, long, long, long, long, long> tup = new Tuple<long, long, long, long, long, long>(1, 4, 5, 6, 7, 8);
+        }
+    }
+
+    [Benchmark]
+    public void LargeValueTupleCreatedInLoop()
+    {
+        for (int index = 0; index < 1000000; ++index)
+        {
+            ValueTuple<long, long, long, long, long, long> tup = (3, 4, 5, 6, 7, 8);
+        }
+    }
 }
